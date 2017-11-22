@@ -286,6 +286,7 @@ MediaProfiles::createAudioEncoderCap(const char **atts)
 
     const size_t nMappings = sizeof(sAudioEncoderNameMap)/sizeof(sAudioEncoderNameMap[0]);
     const int codec = findTagForName(sAudioEncoderNameMap, nMappings, atts[1]);
+    if(codec == -1) return NULL;
     CHECK(codec != -1);
 
     MediaProfiles::AudioEncoderCap *cap =
@@ -326,7 +327,7 @@ MediaProfiles::createCamcorderProfile(int cameraId, const char **atts, Vector<in
     const size_t nProfileMappings = sizeof(sCamcorderQualityNameMap)/
             sizeof(sCamcorderQualityNameMap[0]);
     const int quality = findTagForName(sCamcorderQualityNameMap, nProfileMappings, atts[1]);
-    CHECK(quality != -1);
+    if(quality == -1) return NULL;
 
     const size_t nFormatMappings = sizeof(sFileFormatMap)/sizeof(sFileFormatMap[0]);
     const int fileFormat = findTagForName(sFileFormatMap, nFormatMappings, atts[3]);
@@ -405,7 +406,9 @@ MediaProfiles::startElementHandler(void *userData, const char *name, const char 
         profiles->mVideoEncoders.add(createVideoEncoderCap(atts));
     } else if (strcmp("AudioEncoderCap", name) == 0 &&
                strcmp("true", atts[3]) == 0) {
-        profiles->mAudioEncoders.add(createAudioEncoderCap(atts));
+MediaProfiles::AudioEncoderCap* cap = createAudioEncoderCap(atts);
+if(cap != NULL)
+        profiles->mAudioEncoders.add(cap);
     } else if (strcmp("VideoDecoderCap", name) == 0 &&
                strcmp("true", atts[3]) == 0) {
         profiles->mVideoDecoders.add(createVideoDecoderCap(atts));
@@ -418,8 +421,9 @@ MediaProfiles::startElementHandler(void *userData, const char *name, const char 
         profiles->mCurrentCameraId = getCameraId(atts);
         profiles->addStartTimeOffset(profiles->mCurrentCameraId, atts);
     } else if (strcmp("EncoderProfile", name) == 0) {
-        profiles->mCamcorderProfiles.add(
-            createCamcorderProfile(profiles->mCurrentCameraId, atts, profiles->mCameraIds));
+	    MediaProfiles::CamcorderProfile* profile = createCamcorderProfile(profiles->mCurrentCameraId, atts, profiles->mCameraIds);
+	    if(profile != NULL)
+		    profiles->mCamcorderProfiles.add(profile);
     } else if (strcmp("ImageEncoding", name) == 0) {
         profiles->addImageEncodingQualityLevel(profiles->mCurrentCameraId, atts);
     }
