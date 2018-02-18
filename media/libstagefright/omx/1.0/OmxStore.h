@@ -49,6 +49,11 @@ struct OmxStore : public IOmxStore {
     Return<void> getNodePrefix(getNodePrefix_cb) override;
     Return<void> listRoles(listRoles_cb) override;
     Return<sp<IOmx>> getOmx(hidl_string const&) override;
+protected:
+    static Status mParsingStatus;
+    static hidl_string mPrefix;
+    static hidl_vec<ServiceAttribute> mServiceAttributeList;
+    static hidl_vec<RoleInfo> mRoleList;
 };
 
 extern "C" IOmxStore* HIDL_FETCH_IOmxStore(const char* name);

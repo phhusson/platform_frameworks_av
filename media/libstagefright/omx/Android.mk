@@ -22,6 +22,7 @@ LOCAL_SRC_FILES:=                          \
         1.0/WOmxNode.cpp                   \
         1.0/WOmxObserver.cpp               \
         1.0/WOmxBufferSource.cpp           \
+	1.0/xmlparser/MediaCodecsXmlParser.cpp
 
 LOCAL_C_INCLUDES += \
         $(TOP)/frameworks/av/media/libstagefright \
@@ -30,6 +31,7 @@ LOCAL_C_INCLUDES += \
         $(TOP)/system/libhidl/base/include \
 
 LOCAL_SHARED_LIBRARIES :=                         \
+        libexpat                                  \
         libbase                                   \
         libbinder                                 \
         libmedia                                  \
