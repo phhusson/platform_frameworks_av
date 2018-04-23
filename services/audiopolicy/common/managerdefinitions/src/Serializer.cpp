@@ -395,14 +395,22 @@ Return<AudioGainTraits::Element> AudioGainTraits::deserialize(const xmlNode *cur
 }
 
 Return<AudioProfileTraits::Element> AudioProfileTraits::deserialize(const xmlNode *cur,
-        PtrSerializingCtx /*serializingContext*/)
+        PtrSerializingCtx serializingContext)
 {
+    bool isOutput = serializingContext != nullptr;
     std::string samplingRates = getXmlAttribute(cur, Attributes::samplingRates);
     std::string format = getXmlAttribute(cur, Attributes::format);
     std::string channels = getXmlAttribute(cur, Attributes::channelMasks);
+    ChannelTraits::Collection channelsMask = channelMasksFromString(channels, ",");
+
+    //Some Foxconn devices have wrong earpiece channel mask, leading to no channel mask
+    if(channelsMask.size() == 1 && channelsMask[0] == AUDIO_CHANNEL_IN_MONO && isOutput) {
+        fixedEarpieceChannels = true;
+        channelsMask = channelMasksFromString("AUDIO_CHANNEL_OUT_MONO", ",");
+    }
 
     Element profile = new AudioProfile(formatFromString(format, gDynamicFormat),
-            channelMasksFromString(channels, ","),
+            channelsMask,
             samplingRatesFromString(samplingRates, ","));
 
     profile->setDynamicFormat(profile->getFormat() == gDynamicFormat);
@@ -517,10 +525,15 @@ Return<DevicePortTraits::Element> DevicePortTraits::deserialize(const xmlNode *c
     }
 
     AudioProfileTraits::Collection profiles;
-    status_t status = deserializeCollection<AudioProfileTraits>(cur, &profiles, NULL);
+    status_t status;
+    if(audio_is_output_devices(type))
+        status = deserializeCollection<AudioProfileTraits>(doc, root, profiles, (PtrSerializingCtx)1);
+    else
+        status = deserializeCollection<AudioProfileTraits>(cur, &profiles, NULL);
     if (status != NO_ERROR) {
         return Status::fromStatusT(status);
     }
+
     if (profiles.isEmpty()) {
         profiles.add(AudioProfile::createFullDynamic());
     }
@@ -671,6 +684,14 @@ Return<ModuleTraits::Element> ModuleTraits::deserialize(const xmlNode *cur, PtrS
                 }
             }
         }
+    }
+
+    if(fixedEarpieceChannels) {
+        sp<DeviceDescriptor> device =
+            module->getDeclaredDevices().getDeviceFromTagName(String8("Earpiece"));
+        if(device != 0)
+            ctx->addAvailableDevice(device);
+        fixedEarpieceChannels = false;
     }
     return module;
 }
