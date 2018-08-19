@@ -307,7 +307,7 @@ status_t CameraService::getSystemCameraKind(const String8& cameraId, SystemCamer
 }
 
 void CameraService::updateCameraNumAndIds() {
-    Mutex::Autolock l(mServiceLock);
+    //Mutex::Autolock l(mServiceLock);
     std::pair<int, int> systemAndNonSystemCameras = mCameraProviderManager->getCameraCount();
     // Excludes hidden secure cameras
     mNumberOfCameras =
