@@ -343,7 +343,7 @@ void CameraService::addStates(const String8 id) {
                                                                 conflicting, deviceKind));
     }
 
-    if (mFlashlight->hasFlashUnit(id)) {
+    if (mFlashlight != nullptr && mFlashlight->hasFlashUnit(id)) {
         Mutex::Autolock al(mTorchStatusMutex);
         mTorchStatusMap.add(id, TorchModeStatus::AVAILABLE_OFF);
 
