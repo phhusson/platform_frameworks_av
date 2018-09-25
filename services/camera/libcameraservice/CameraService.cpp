@@ -204,6 +204,20 @@ status_t CameraService::enumerateProviders() {
 
     for (auto& cameraId : deviceIds) {
         String8 id8 = String8(cameraId.c_str());
+        if (property_get_bool("persist.sys.camera.huawei", false)) {
+            bool cameraFound = false;
+            {
+                Mutex::Autolock lock(mCameraStatesLock);
+                auto iter = mCameraStates.find(id8);
+                if (iter != mCameraStates.end()) {
+                    cameraFound = true;
+                }
+            }
+            if (!cameraFound) {
+                addStates(id8);
+            }
+        }
+
         if (getCameraState(id8) == nullptr) {
             onDeviceStatusChanged(id8, CameraDeviceStatus::PRESENT);
         }
@@ -317,8 +331,10 @@ void CameraService::onDeviceStatusChanged(const String8& id,
             ALOGI("%s: Unknown camera ID %s, a new camera is added",
                     __FUNCTION__, id.string());
 
+   if (!property_get_bool("persist.sys.camera.huawei", false)) {
             // First add as absent to make sure clients are notified below
             addStates(id);
+   }
 
             updateStatus(newStatus, id);
         } else {
