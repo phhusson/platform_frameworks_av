@@ -81,7 +81,8 @@ LOCAL_SHARED_LIBRARIES:= \
     android.hardware.camera.device@1.0 \
     android.hardware.camera.device@3.2 \
     android.hardware.camera.device@3.3 \
-    android.hardware.camera.device@3.4
+    android.hardware.camera.device@3.4 \
+    vendor.xiaomi.hardware.motor@1.0
 
 LOCAL_EXPORT_SHARED_LIBRARY_HEADERS := libbinder libcamera_client libfmq
 

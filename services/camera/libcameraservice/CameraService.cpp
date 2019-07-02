@@ -70,6 +70,8 @@
 #include "utils/CameraTraces.h"
 #include "utils/TagMonitor.h"
 
+#include <vendor/xiaomi/hardware/motor/1.0/IMotor.h>
+
 namespace {
     const char* kPermissionServiceName = "permission";
 }; // namespace anonymous
@@ -1441,6 +1443,17 @@ Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const String8&
         }
     } // lock is destroyed, allow further connect calls
 
+    // Time to call xiaomi-motor
+    auto motorSvc = ::vendor::xiaomi::hardware::motor::V1_0::IMotor::getService();
+    if(motorSvc != nullptr) {
+        auto motorStatus = motorSvc->getMotorStatus();
+        ALOGD("Evaluating xiaomi-motor popup: cameraId = %s, motorStatus = %d",
+                cameraId.string(), (int) motorStatus);
+        if(std::stoi(cameraId.string()) == 1 && motorStatus == 13) {
+            motorSvc->popupMotor(1);
+        }
+    }
+
     // Important: release the mutex here so the client can call back into the service from its
     // destructor (can be at the end of the call)
     device = client;
@@ -2182,6 +2195,17 @@ binder::Status CameraService::BasicClient::disconnect() {
         return res;
     }
     mDisconnected = true;
+
+    // Time to call xiaomi-motor
+    auto motorSvc = ::vendor::xiaomi::hardware::motor::V1_0::IMotor::getService();
+    if(motorSvc != nullptr) {
+        auto motorStatus = motorSvc->getMotorStatus();
+        ALOGD("Evaluating xiaomi-motor takeback: cameraId = %s, motorStatus = %d",
+                mCameraIdStr.string(), (int) motorStatus);
+        if(std::stoi(mCameraIdStr.string()) == 1 && motorStatus == 11) {
+            motorSvc->takebackMotor(1);
+        }
+    }
 
     sCameraService->removeByClient(this);
     sCameraService->logDisconnected(mCameraIdStr, mClientPid,
