@@ -326,7 +326,7 @@ status_t DevicePortTraits::deserialize(_xmlDoc *doc, const _xmlNode *root, PtrEl
         ALOGW("%s: bad type %08x", __FUNCTION__, type);
         return BAD_VALUE;
     }
-    deviceDesc = new Element(type, String8(name.c_str()));
+    deviceDesc = new Element(type, String8(strdup(name.c_str())));
 
     string address = getXmlAttribute(root, Attributes::address);
     if (!address.empty()) {
