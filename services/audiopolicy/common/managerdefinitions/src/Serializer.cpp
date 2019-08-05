@@ -517,7 +517,7 @@ Return<DevicePortTraits::Element> DevicePortTraits::deserialize(const xmlNode *c
     if (!encodedFormatsLiteral.empty()) {
         encodedFormats = formatsFromString(encodedFormatsLiteral, " ");
     }
-    Element deviceDesc = new DeviceDescriptor(type, encodedFormats, String8(name.c_str()));
+    Element deviceDesc = new DeviceDescriptor(type, encodedFormats, String8(strdup(name.c_str())));
 
     std::string address = getXmlAttribute(cur, Attributes::address);
     if (!address.empty()) {
