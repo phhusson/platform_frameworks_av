@@ -394,6 +394,7 @@ Return<AudioGainTraits::Element> AudioGainTraits::deserialize(const xmlNode *cur
     }
 }
 
+static bool fixedEarpieceChannels = false;
 Return<AudioProfileTraits::Element> AudioProfileTraits::deserialize(const xmlNode *cur,
         PtrSerializingCtx serializingContext)
 {
@@ -527,7 +528,7 @@ Return<DevicePortTraits::Element> DevicePortTraits::deserialize(const xmlNode *c
     AudioProfileTraits::Collection profiles;
     status_t status;
     if(audio_is_output_devices(type))
-        status = deserializeCollection<AudioProfileTraits>(doc, root, profiles, (PtrSerializingCtx)1);
+        status = deserializeCollection<AudioProfileTraits>(cur, &profiles, (PtrSerializingCtx)1);
     else
         status = deserializeCollection<AudioProfileTraits>(cur, &profiles, NULL);
     if (status != NO_ERROR) {
