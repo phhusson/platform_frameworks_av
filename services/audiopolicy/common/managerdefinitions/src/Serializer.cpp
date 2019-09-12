@@ -685,8 +685,10 @@ static void fixupQualcommBtScoRoute(RouteTraits::Collection& routes, DevicePortT
             }) {
         auto source = ctx->findPortByTagName(String8(sourceName));
         ALOGE("Got source %p\n", source.get());
-        sources.add(source);
-	source->addRoute(newRoute);
+	if (source.get() != nullptr) {
+	    sources.add(source);
+	    source->addRoute(newRoute);
+	}
     }
 
     newRoute->setSources(sources);
