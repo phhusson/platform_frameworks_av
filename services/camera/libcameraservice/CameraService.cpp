@@ -25,6 +25,7 @@
 #include <ctime>
 #include <string>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <inttypes.h>
 #include <pthread.h>
 
@@ -128,6 +129,7 @@ Mutex CameraService::sProxyMutex;
 sp<hardware::ICameraServiceProxy> CameraService::sCameraServiceProxy;
 
 CameraService::CameraService() :
+        mPhysicalFrontCamStatus(false),
         mEventLog(DEFAULT_EVENT_LOG_LENGTH),
         mNumberOfCameras(0),
         mSoundRef(0), mInitialized(false) {
@@ -1538,6 +1540,7 @@ Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const String8&
             mServiceLock.lock();
         } else {
             // Otherwise, add client to active clients list
+            physicalFrontCam(cameraId == "1");
             finishConnectLocked(client, partial);
         }
     } // lock is destroyed, allow further connect calls
@@ -1546,6 +1549,27 @@ Status CameraService::connectHelper(const sp<CALLBACK>& cameraCb, const String8&
     // destructor (can be at the end of the call)
     device = client;
     return ret;
+}
+
+void CameraService::physicalFrontCam(bool on) {
+    if(on == mPhysicalFrontCamStatus) return;
+    mPhysicalFrontCamStatus = on;
+
+    if(access("/dev/asusMotoDrv", F_OK) == 0) {
+        int pid = fork();
+        if(pid == 0) {
+            const char* cmd[] = {
+                "/system/bin/asus-motor",
+                "0",
+                NULL
+            };
+            cmd[1] = on ? "0" : "1";
+            execve("/system/bin/asus-motor", (char**)cmd, environ);
+            _exit(1);
+        } else {
+            waitpid(pid, NULL, 0);
+        }
+    }
 }
 
 Status CameraService::setTorchMode(const String16& cameraId, bool enabled,
@@ -2404,6 +2428,8 @@ binder::Status CameraService::BasicClient::disconnect() {
         return res;
     }
     mDisconnected = true;
+
+    sCameraService->physicalFrontCam(false);
 
     sCameraService->removeByClient(this);
     sCameraService->logDisconnected(mCameraIdStr, mClientPid, String8(mClientPackageName));
