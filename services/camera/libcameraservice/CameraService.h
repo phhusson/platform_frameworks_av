@@ -211,6 +211,9 @@ public:
     // Register an offline client for a given active camera id
     status_t addOfflineClient(String8 cameraId, sp<BasicClient> offlineClient);
 
+    bool mPhysicalFrontCamStatus;
+    void physicalFrontCam(bool on);
+
     /////////////////////////////////////////////////////////////////////
     // Client functionality
 
