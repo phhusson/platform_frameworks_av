@@ -182,6 +182,9 @@ public:
     // Monitored UIDs availability notification
     void                notifyMonitoredUids();
 
+    bool mPhysicalFrontCamStatus;
+    void physicalFrontCam(bool on);
+
     /////////////////////////////////////////////////////////////////////
     // Client functionality
 
