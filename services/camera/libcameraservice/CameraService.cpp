@@ -16,7 +16,7 @@
 
 #define LOG_TAG "CameraService"
 #define ATRACE_TAG ATRACE_TAG_CAMERA
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
 #include <algorithm>
 #include <climits>
@@ -235,10 +235,11 @@ status_t CameraService::enumerateProviders() {
             if (!cameraFound) {
                 addStates(id8);
             }
-        }
-
-        if (getCameraState(id8) == nullptr) {
             onDeviceStatusChanged(id8, CameraDeviceStatus::PRESENT);
+        } else {
+            if (getCameraState(id8) == nullptr) {
+                onDeviceStatusChanged(id8, CameraDeviceStatus::PRESENT);
+            }
         }
     }
 
