@@ -579,6 +579,17 @@ std::variant<status_t, DevicePortTraits::Element> PolicySerializer::deserialize<
     return deviceDesc;
 }
 
+char* trim(char * s) {
+    int l = strlen(s);
+
+    if (l > 0) {
+      while (isspace(s[l - 1])) --l;
+      while (*s && isspace(*s)) ++s, --l;
+    }
+
+    return strndup(s, l);
+}
+
 template<>
 std::variant<status_t, RouteTraits::Element> PolicySerializer::deserialize<RouteTraits>(
         const xmlNode *cur, RouteTraits::PtrSerializingCtx ctx)
@@ -626,6 +637,9 @@ std::variant<status_t, RouteTraits::Element> PolicySerializer::deserialize<Route
     while (devTag != NULL) {
         if (strlen(devTag) != 0) {
             sp<PolicyAudioPort> source = ctx->findPortByTagName(devTag);
+            if (source == NULL) {
+                source = ctx->findPortByTagName(trim(devTag));
+	    }
             if (source == NULL && !mIgnoreVendorExtensions) {
                 ALOGE("%s: no source found with name=%s", __func__, devTag);
                 return BAD_VALUE;
