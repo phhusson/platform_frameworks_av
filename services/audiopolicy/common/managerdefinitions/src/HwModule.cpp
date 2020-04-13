@@ -294,6 +294,27 @@ sp <HwModule> HwModuleCollection::getModuleForDeviceTypes(audio_devices_t type,
             }
         }
     }
+    //We didn't find one? Ok but all SCOs are equivalent surely?
+    if(type == AUDIO_DEVICE_OUT_BLUETOOTH_SCO ||
+        type == AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET ||
+        type == AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT) {
+        ALOGE("Fallback SCO");
+        if(type != AUDIO_DEVICE_OUT_BLUETOOTH_SCO) {
+            auto ret = getModuleForDeviceTypes(AUDIO_DEVICE_OUT_BLUETOOTH_SCO, encodedFormat);
+            ALOGE("Fallback SCO simple? %s", (ret != nullptr) ? "yes" : "no");
+            if(ret != nullptr) return ret;
+        }
+        if(type != AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET) {
+            auto ret = getModuleForDeviceTypes(AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET, encodedFormat);
+            ALOGE("Fallback SCO headset? %s", (ret != nullptr) ? "yes" : "no");
+            if(ret != nullptr) return ret;
+        }
+        if(type != AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT) {
+            auto ret = getModuleForDeviceTypes(AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT, encodedFormat);
+            ALOGE("Fallback SCO carkit? %s", (ret != nullptr) ? "yes" : "no");
+            if(ret != nullptr) return ret;
+        }
+    }
     return nullptr;
 }
 
