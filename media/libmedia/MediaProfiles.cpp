@@ -341,12 +341,10 @@ MediaProfiles::createCamcorderProfile(int cameraId, const char **atts, Vector<in
     const size_t nProfileMappings = sizeof(sCamcorderQualityNameMap)/
             sizeof(sCamcorderQualityNameMap[0]);
     const int quality = findTagForName(sCamcorderQualityNameMap, nProfileMappings, atts[1]);
-    if(quality == -1) return nullptr;
     CHECK(quality != -1);
 
     const size_t nFormatMappings = sizeof(sFileFormatMap)/sizeof(sFileFormatMap[0]);
     const int fileFormat = findTagForName(sFileFormatMap, nFormatMappings, atts[3]);
-    if(fileFormat == -1) return nullptr;
     CHECK(fileFormat != -1);
 
     MediaProfiles::CamcorderProfile *profile = new MediaProfiles::CamcorderProfile;
@@ -437,10 +435,8 @@ MediaProfiles::startElementHandler(void *userData, const char *name, const char 
         profiles->mCurrentCameraId = getCameraId(atts);
         profiles->addStartTimeOffset(profiles->mCurrentCameraId, atts);
     } else if (strcmp("EncoderProfile", name) == 0) {
-        MediaProfiles::CamcorderProfile* profile = createCamcorderProfile(profiles->mCurrentCameraId, atts, profiles->mCameraIds);
-        if(profile != nullptr) {
-            profiles->mCamcorderProfiles.add(profile);
-        }
+        profiles->mCamcorderProfiles.add(
+            createCamcorderProfile(profiles->mCurrentCameraId, atts, profiles->mCameraIds));
     } else if (strcmp("ImageEncoding", name) == 0) {
         profiles->addImageEncodingQualityLevel(profiles->mCurrentCameraId, atts);
     }
