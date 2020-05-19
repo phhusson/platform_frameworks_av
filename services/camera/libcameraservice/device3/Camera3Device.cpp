@@ -299,8 +299,16 @@ status_t Camera3Device::initializeCommonLocked() {
     // Measure the clock domain offset between camera and video/hw_composer
     camera_metadata_entry timestampSource =
             mDeviceInfo.find(ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE);
-    if (timestampSource.count > 0 && timestampSource.data.u8[0] ==
-            ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME) {
+    int timestampSourceValue = 0;
+    if ((timestampSource.count > 0 && timestampSource.data.u8[0] ==
+            ANDROID_SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME)) {
+        timestampSourceValue = 1;
+    }
+    int forceTimestampSource = property_get_int32("persist.sys.phh.camera.force_timestampsource", -1);
+    //Don't override if it's -1, default value
+    if(forceTimestampSource == 0) timestampSourceValue = 0;
+    if(forceTimestampSource == 1) timestampSourceValue = 1;
+    if (timestampSourceValue == 1) {
         mTimestampOffset = getMonoToBoottimeOffset();
     }
 
