@@ -1166,6 +1166,9 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
         return err;
     }
 
+    ALOGE("Window undequeued buffers is %d\n", *minUndequeuedBuffers);
+    ALOGE("Consumerrequested %d\n", def.nBufferCountMin);
+
     // FIXME: assume that surface is controlled by app (native window
     // returns the number for the case when surface is not controlled by app)
     // FIXME2: This means that minUndeqeueudBufs can be 1 larger than reported
@@ -1178,22 +1181,29 @@ status_t ACodec::configureOutputBuffersFromNativeWindow(
     // 2. try to allocate two (2) additional buffers to reduce starvation from
     //    the consumer
     //    plus an extra buffer to account for incorrect minUndequeuedBufs
-    for (OMX_U32 extraBuffers = 2 + 1; /* condition inside loop */; extraBuffers--) {
-        OMX_U32 newBufferCount =
-            def.nBufferCountMin + *minUndequeuedBuffers + extraBuffers;
+    for (int extraBuffers = 2 + 1; /* condition inside loop */; extraBuffers--) {
+        int a = def.nBufferCountMin;
+        int b = *minUndequeuedBuffers;
+        int c = extraBuffers;
+        int newBufferCount = a+b+c;
         def.nBufferCountActual = newBufferCount;
         err = mOMXNode->setParameter(
                 OMX_IndexParamPortDefinition, &def, sizeof(def));
 
         if (err == OK) {
-            *minUndequeuedBuffers += extraBuffers;
+            ALOGE("Managed to allocate %d buffers (%d extra)\n", newBufferCount, extraBuffers);
+            if(extraBuffers > 0) {
+                *minUndequeuedBuffers += extraBuffers;
+            } else {
+                *minUndequeuedBuffers -= -extraBuffers;
+            }
             break;
         }
 
         ALOGW("[%s] setting nBufferCountActual to %u failed: %d",
                 mComponentName.c_str(), newBufferCount, err);
         /* exit condition */
-        if (extraBuffers == 0) {
+        if (extraBuffers == -2 || newBufferCount == 1) {
             return err;
         }
     }
