@@ -29,12 +29,15 @@
 #include <utils/StrongPointer.h>
 #include <utils/Errors.h>
 #include <utils/RefBase.h>
+#include <cutils/properties.h>
 #include "Serializer.h"
 #include "TypeConverter.h"
 
 namespace android {
 
 namespace {
+
+static bool forceDisableA2dpOffload = false;
 
 // TODO(mnaganov): Consider finding an alternative for using HIDL code.
 using hardware::Return;
@@ -316,7 +319,7 @@ status_t deserializeCollection(const xmlNode *cur,
                         return status;
                     }
                 } else {
-                    return BAD_VALUE;
+                    ALOGE("Ignoring...");
                 }
             }
         }
@@ -732,11 +735,33 @@ Return<ModuleTraits::Element> ModuleTraits::deserialize(const xmlNode *cur, PtrS
 
     Element module = new HwModule(name.c_str(), versionMajor, versionMinor);
 
+    bool isA2dpModule = strcmp(name.c_str(), "a2dp") == 0;
+    bool isPrimaryModule = strcmp(name.c_str(), "primary") == 0;
+
     // Deserialize childrens: Audio Mix Port, Audio Device Ports (Source/Sink), Audio Routes
     MixPortTraits::Collection mixPorts;
     status_t status = deserializeCollection<MixPortTraits>(cur, &mixPorts, NULL);
     if (status != NO_ERROR) {
         return Status::fromStatusT(status);
+    }
+    if(forceDisableA2dpOffload && isA2dpModule) {
+        for(const auto& mixPort: mixPorts) {
+            ALOGE("Disable a2dp offload...? %s", mixPort->getTagName().c_str());
+            //"a2dp" sw module already has a2dp out
+            if(mixPort->getTagName() == String8("a2dp output")) {
+                forceDisableA2dpOffload = false;
+                break;
+            }
+        }
+    }
+    if(forceDisableA2dpOffload && isA2dpModule) {
+        //Add
+        //<mixPort name="a2dp output" role="source"/>
+        auto mixPort = new IOProfile(String8("a2dp output"), AUDIO_PORT_ROLE_SOURCE);
+        AudioProfileTraits::Collection profiles;
+        profiles.add(AudioProfile::createFullDynamic());
+        mixPort->setAudioProfiles(profiles);
+        mixPorts.push_back(mixPort);
     }
     module->setProfiles(mixPorts);
 
@@ -745,6 +770,89 @@ Return<ModuleTraits::Element> ModuleTraits::deserialize(const xmlNode *cur, PtrS
     if (status != NO_ERROR) {
         return Status::fromStatusT(status);
     }
+    Vector<String8> a2dpOuts;
+    a2dpOuts.push_back(String8("BT A2DP Out"));
+    a2dpOuts.push_back(String8("BT A2DP Headphones"));
+    a2dpOuts.push_back(String8("BT A2DP Speaker"));
+    if(forceDisableA2dpOffload) {
+        if(isA2dpModule) {
+            //<devicePort tagName="BT A2DP Out" type="AUDIO_DEVICE_OUT_BLUETOOTH_A2DP" role="sink" address="lhdc_a2dp">
+            //  <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+            //      samplingRates="44100,48000,96000"
+            //      channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+            //</devicePort>
+            if(true) {
+                FormatVector formats;
+                auto devicePortOut = new DeviceDescriptor(AUDIO_DEVICE_OUT_BLUETOOTH_A2DP, formats, String8(strdup("BT A2DP Out")));
+                AudioProfileTraits::Collection profiles;
+                ChannelsVector channels;
+                SampleRateVector sampleRates;
+                channels.add(AUDIO_CHANNEL_OUT_STEREO);
+                sampleRates.add(44100);
+                sampleRates.add(48000);
+                sampleRates.add(96000);
+                auto profile = new AudioProfile(AUDIO_FORMAT_PCM_16_BIT, channels, sampleRates);
+                profiles.add(profile);
+                devicePortOut->setAudioProfiles(profiles);
+                devicePortOut->setAddress(String8("lhdc_a2dp"));
+                devicePorts.add(devicePortOut);
+            }
+            //<devicePort tagName="BT A2DP Headphones" type="AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES" role="sink" address="lhdc_a2dp">
+            //  <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+            //      samplingRates="44100,48000,96000"
+            //      channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+            //</devicePort>
+            if(true) {
+                FormatVector formats;
+                auto devicePortOut = new DeviceDescriptor(AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES, formats, String8(strdup("BT A2DP Headphones")));
+                AudioProfileTraits::Collection profiles;
+                ChannelsVector channels;
+                SampleRateVector sampleRates;
+                channels.add(AUDIO_CHANNEL_OUT_STEREO);
+                sampleRates.add(44100);
+                sampleRates.add(48000);
+                sampleRates.add(96000);
+                auto profile = new AudioProfile(AUDIO_FORMAT_PCM_16_BIT, channels, sampleRates);
+                profiles.add(profile);
+                devicePortOut->setAudioProfiles(profiles);
+                devicePortOut->setAddress(String8("lhdc_a2dp"));
+                devicePorts.add(devicePortOut);
+            }
+            //<devicePort tagName="BT A2DP Speaker" type="AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER" role="sink" address="lhdc_a2dp">
+            //  <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
+            //      samplingRates="44100,48000,96000"
+            //      channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
+            //</devicePort>
+            if(true) {
+                FormatVector formats;
+                auto devicePortOut = new DeviceDescriptor(AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER, formats, String8(strdup("BT A2DP Speaker")));
+                AudioProfileTraits::Collection profiles;
+                ChannelsVector channels;
+                SampleRateVector sampleRates;
+                channels.add(AUDIO_CHANNEL_OUT_STEREO);
+                sampleRates.add(44100);
+                sampleRates.add(48000);
+                sampleRates.add(96000);
+                auto profile = new AudioProfile(AUDIO_FORMAT_PCM_16_BIT, channels, sampleRates);
+                profiles.add(profile);
+                devicePortOut->setAudioProfiles(profiles);
+                devicePortOut->setAddress(String8("lhdc_a2dp"));
+                devicePorts.add(devicePortOut);
+
+            }
+        } else if(isPrimaryModule) {
+            for(const auto& out: a2dpOuts) {
+                auto iterA = std::find_if(devicePorts.begin(), devicePorts.end(), [out](const auto port) {
+                        if(port->getTagName() == out) return true;
+                        return false;
+                        });
+                if(iterA != devicePorts.end()) {
+                    ALOGE("Erasing device port %s", (*iterA)->getTagName().c_str());
+                    devicePorts.erase(iterA);
+                }
+            }
+        }
+    }
     module->setDeclaredDevices(devicePorts);
 
     RouteTraits::Collection routes;
@@ -752,7 +860,76 @@ Return<ModuleTraits::Element> ModuleTraits::deserialize(const xmlNode *cur, PtrS
     if (status != NO_ERROR) {
         return Status::fromStatusT(status);
     }
+    if(forceDisableA2dpOffload) {
+        if(strcmp(name.c_str(), "primary") == 0) {
+            for(const auto& out: a2dpOuts) {
+                auto iterA = std::find_if(routes.begin(), routes.end(), [out](const auto route) {
+                        if(route->getType() != AUDIO_ROUTE_MIX)
+                        return false;
+                        auto sink = route->getSink();
+                        if(sink->getTagName() == out) {
+                            return true;
+                        }
+                        return false;
+                });
+                if(iterA != routes.end()) {
+                    auto sink = (*iterA)->getSink()->getTagName();
+                    ALOGE("Erasing route %s", sink.c_str());
+                    routes.erase(iterA);
+                }
+            }
+        } else if(isA2dpModule) {
+            //<route type="mix" sink="BT A2DP Out"
+            //  sources="a2dp output"/>
+            if(true) {
+                auto newRoute = new AudioRoute(AUDIO_ROUTE_MIX);
+                auto sink = module->findPortByTagName(String8("BT A2DP Out"));
+                auto source = module->findPortByTagName(String8("a2dp output"));
+                newRoute->setSink(sink);
+                AudioPortVector sources;
+                sources.add(source);
+
+                sink->addRoute(newRoute);
+                source->addRoute(newRoute);
+                newRoute->setSources(sources);
+
+                routes.add(newRoute);
+            }
+            //<route type="mix" sink="BT A2DP Headphones"
+            //  sources="a2dp output"/>
+            if(true) {
+                auto newRoute = new AudioRoute(AUDIO_ROUTE_MIX);
+                auto sink = module->findPortByTagName(String8("BT A2DP Headphones"));
+                auto source = module->findPortByTagName(String8("a2dp output"));
+                newRoute->setSink(sink);
+                AudioPortVector sources;
+                sources.add(source);
+
+                sink->addRoute(newRoute);
+                source->addRoute(newRoute);
+                newRoute->setSources(sources);
+                routes.add(newRoute);
+            }
+            //<route type="mix" sink="BT A2DP Speaker"
+            //  sources="a2dp output"/>
+            if(true) {
+                auto newRoute = new AudioRoute(AUDIO_ROUTE_MIX);
+                auto sink = module->findPortByTagName(String8("BT A2DP Speaker"));
+                auto source = module->findPortByTagName(String8("a2dp output"));
+                newRoute->setSink(sink);
+                AudioPortVector sources;
+                sources.add(source);
+
+                sink->addRoute(newRoute);
+                source->addRoute(newRoute);
+                newRoute->setSources(sources);
+                routes.add(newRoute);
+            }
+        }
+    }
+    ALOGE("Good morning");
     fixupQualcommBtScoRoute(routes, devicePorts, module.get());
+    ALOGE("Good morning2");
     module->setRoutes(routes);
 
     for (const xmlNode *children = cur->xmlChildrenNode; children != NULL;
@@ -922,6 +1099,7 @@ status_t PolicySerializer::deserialize(const char *configFile, AudioPolicyConfig
 status_t deserializeAudioPolicyFile(const char *fileName, AudioPolicyConfig *config)
 {
     PolicySerializer serializer;
+    forceDisableA2dpOffload = property_get_bool("persist.sys.phh.disable_a2dp_offload", false);
     return serializer.deserialize(fileName, config);
 }
 

@@ -76,6 +76,8 @@ static const std::vector<audio_channel_mask_t> surroundChannelMasksOrder = {{
         AUDIO_CHANNEL_OUT_2POINT1POINT2, AUDIO_CHANNEL_OUT_2POINT0POINT2,
         AUDIO_CHANNEL_OUT_5POINT1, AUDIO_CHANNEL_OUT_STEREO }};
 
+static bool forceDisableA2dpOffload = false;
+
 // ----------------------------------------------------------------------------
 // AudioPolicyInterface implementation
 // ----------------------------------------------------------------------------
@@ -4256,6 +4258,7 @@ static status_t deserializeAudioPolicyXmlConfig(AudioPolicyConfig &config) {
     } else if (property_get_bool("persist.bluetooth.bluetooth_audio_hal.disabled", false)) {
         fileNames.push_back(AUDIO_POLICY_BLUETOOTH_LEGACY_HAL_XML_CONFIG_FILE_NAME);
     }
+    forceDisableA2dpOffload = property_get_bool("persist.sys.phh.disable_a2dp_offload", false);
     fileNames.push_back(AUDIO_POLICY_XML_CONFIG_FILE_NAME);
 
     for (const char* fileName : fileNames) {
