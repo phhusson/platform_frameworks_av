@@ -183,7 +183,9 @@ std::vector<std::string> CameraProviderManager::getAPI1CompatibleCameraDeviceIds
         // API1 app doesn't handle logical and physical camera devices well. So
         // for each camera facing, only take the first id advertised by HAL in
         // all [logical, physical1, physical2, ...] id combos, and filter out the rest.
-        filterLogicalCameraIdsLocked(providerDeviceIds);
+        if(!property_get_bool("persist.sys.phh.include_all_cameras", false)) {
+            filterLogicalCameraIdsLocked(providerDeviceIds);
+        }
         collectDeviceIdsLocked(providerDeviceIds, publicDeviceIds, systemDeviceIds);
     }
     auto sortFunc =
