@@ -5340,9 +5340,7 @@ status_t ACodec::getPortFormat(OMX_U32 portIndex, sp<AMessage> &notify) {
                             err = mOMXNode->getParameter(
                                     (OMX_INDEXTYPE)OMX_IndexParamAudioAndroidAacDrcPresentation,
                                     &presentation, sizeof(presentation));
-                            if (err != OK) {
-                                return err;
-                            }
+                            if (err == OK) {
                             notify->setInt32("aac-encoded-target-level",
                                              presentation.nEncodedTargetLevel);
                             notify->setInt32("aac-drc-cut-level", presentation.nDrcCut);
@@ -5355,6 +5353,7 @@ status_t ACodec::getPortFormat(OMX_U32 portIndex, sp<AMessage> &notify) {
                             notify->setInt32("aac-drc-album-mode", presentation.nDrcAlbumMode);
                             notify->setInt32("aac-drc-output-loudness",
                                              presentation.nDrcOutputLoudness);
+			    }
                         }
                     }
                     break;
