@@ -22,6 +22,7 @@
 
 #include <android/hardware/camera/device/3.7/ICameraDevice.h>
 #include <vendor/samsung/hardware/camera/provider/3.0/ISehCameraProvider.h>
+#include <vendor/samsung/hardware/camera/provider/4.0/ISehCameraProvider.h>
 
 #include <algorithm>
 #include <chrono>
@@ -1412,7 +1413,9 @@ status_t CameraProviderManager::ProviderInfo::initialize(
     }
 
     auto samsungCast = vendor::samsung::hardware::camera::provider::V3_0::ISehCameraProvider::castFrom(interface);
+    auto samsung40Cast = vendor::samsung::hardware::camera::provider::V4_0::ISehCameraProvider::castFrom(interface);
     auto samsungProvider = samsungCast.isOk() ? static_cast<sp<vendor::samsung::hardware::camera::provider::V3_0::ISehCameraProvider>>(samsungCast) : nullptr;
+    auto samsung40Provider = samsung40Cast.isOk() ? static_cast<sp<vendor::samsung::hardware::camera::provider::V4_0::ISehCameraProvider>>(samsung40Cast) : nullptr;
 
     hardware::Return<bool> linked = interface->linkToDeath(this, /*cookie*/ mId);
     if (!linked.isOk()) {
@@ -1450,6 +1453,7 @@ status_t CameraProviderManager::ProviderInfo::initialize(
         status = idStatus;
         if (status == Status::OK) {
             for (auto& name : cameraDeviceNames) {
+		    ALOGE("Listing camera ID %s", name.c_str());
                 uint16_t major, minor;
                 std::string type, id;
                 status_t res = parseDeviceName(name, &major, &minor, &type, &id);
@@ -1463,7 +1467,9 @@ status_t CameraProviderManager::ProviderInfo::initialize(
             }
         } };
     hardware::Return<void> ret;
-    if(samsungProvider != nullptr && property_get_bool("persist.sys.phh.samsung.camera_ids", false))
+    if(samsung40Provider != nullptr && property_get_bool("persist.sys.phh.samsung.camera_ids", false))
+        ret = samsung40Provider->sehGetCameraIdList(cb);
+    else if(samsungProvider != nullptr && property_get_bool("persist.sys.phh.samsung.camera_ids", false))
         ret = samsungProvider->sehGetCameraIdList(cb);
     else
         ret = interface->getCameraIdList(cb);
