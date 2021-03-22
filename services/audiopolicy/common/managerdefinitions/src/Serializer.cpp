@@ -1011,7 +1011,7 @@ std::variant<status_t, ModuleTraits::Element> PolicySerializer::deserialize<Modu
                         sp<DeviceDescriptor> device = module->getDeclaredDevices().
                                 getDeviceFromTagName(std::string(reinterpret_cast<const char*>(
                                                         attachedDevice.get())));
-                        if (device == nullptr && mIgnoreVendorExtensions) {
+                        if (device == nullptr) {
                             ALOGW("Skipped attached device \"%s\" because it likely uses a vendor"
                                     "extension type",
                                     reinterpret_cast<const char*>(attachedDevice.get()));
