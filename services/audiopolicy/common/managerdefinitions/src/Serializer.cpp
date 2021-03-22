@@ -951,7 +951,12 @@ Return<ModuleTraits::Element> ModuleTraits::deserialize(const xmlNode *cur, PtrS
                         sp<DeviceDescriptor> device = module->getDeclaredDevices().
                                 getDeviceFromTagName(std::string(reinterpret_cast<const char*>(
                                                         attachedDevice.get())));
-                        ctx->addDevice(device);
+                        if(device != nullptr) {
+                            ctx->addDevice(device);
+                        } else {
+                            ALOGE("NULL DEVICE %s: %s %s=%s", __func__, tag, childAttachedDeviceTag,
+                                    reinterpret_cast<const char*>(attachedDevice.get()));
+                        }
                     }
                 }
             }
