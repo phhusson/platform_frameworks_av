@@ -609,10 +609,11 @@ Return<RouteTraits::Element> RouteTraits::deserialize(const xmlNode *cur, PtrSer
                 source = ctx->findPortByTagName(trim(devTag));
                 if (source == NULL) {
                     ALOGE("%s: no source found with name=%s", __func__, devTag);
-                    return Status::fromStatusT(BAD_VALUE);
                 }
             }
-            sources.add(source);
+            if(source != nullptr) {
+                sources.add(source);
+            }
         }
         devTag = strtok(NULL, ",");
     }
