@@ -910,12 +910,14 @@ private:
          * @param[in] delayMs if required
          * @param[in] sourceDesc [optional] in case of external source, source client to be
          * configured by the patch, i.e. assigning an Output (HW or SW)
+         * @param[in] forceSwBridge [optional] force the creation of a SW bridge (internal use only)
          * @return NO_ERROR if patch installed correctly, error code otherwise.
          */
         status_t createAudioPatchInternal(const struct audio_patch *patch,
                                           audio_patch_handle_t *handle,
                                           uid_t uid, uint32_t delayMs = 0,
-                                          const sp<SourceClientDescriptor>& sourceDesc = nullptr);
+                                          const sp<SourceClientDescriptor>& sourceDesc = nullptr,
+                                          bool forceSwBridge = false);
         /**
          * @brief releaseAudioPatchInternal internal function to remove an audio patch
          * @param[in] handle of the patch to be removed
