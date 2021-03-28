@@ -717,10 +717,16 @@ android::status_t parseLegacyVolumes(VolumeGroups &volumeGroups) {
             snprintf(audioPolicyXmlConfigFile, sizeof(audioPolicyXmlConfigFile),
                      "%s/%s", path.c_str(), fileName);
             ret = parseLegacyVolumeFile(audioPolicyXmlConfigFile, volumeGroups);
-            if (ret == NO_ERROR) {
+            ALOGE("Parsing volume for %s gave %zu", audioPolicyXmlConfigFile, volumeGroups.size());
+            if (ret == NO_ERROR && volumeGroups.size() > 0) {
                 return ret;
             }
         }
+    }
+    ret = parseLegacyVolumeFile("/system/etc/fake_audio_policy_volume.xml", volumeGroups);
+    ALOGE("Parsing volume for /system/etc/fake_audio_policy_volume.xml gave %zu",  volumeGroups.size());
+    if (ret == NO_ERROR && volumeGroups.size() == 0) {
+        return ret;
     }
     return BAD_VALUE;
 }
