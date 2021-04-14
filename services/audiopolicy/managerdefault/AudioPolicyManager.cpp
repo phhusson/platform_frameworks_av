@@ -575,16 +575,29 @@ uint32_t AudioPolicyManager::updateCallRouting(const DeviceVector &rxDevices, ui
         createTxPatch = !(availablePrimaryModuleInputDevices().contains(txSourceDevice)) &&
                 (txSinkDevice != 0);
     }
-    // Use legacy routing method for voice calls via setOutputDevice() on primary output.
-    // Otherwise, create two audio patches for TX and RX path.
-    if (!createRxPatch) {
-        muteWaitMs = setOutputDevices(mPrimaryOutput, rxDevices, true, delayMs);
-    } else { // create RX path audio patch
+    if (createRxPatch) { // create RX path audio patch
         mCallRxPatch = createTelephonyPatch(true /*isRx*/, rxDevices.itemAt(0), delayMs);
+
+        if (mCallRxPatch == nullptr) {
+            // Fall back to legacy routing for voice calls if the new patching method
+            // failed. setOutputDevice() will take care of TX in this case, so don't
+            // create the TX patch either.
+            // This is seen on some MT6771 devices on Q vendor, where the HAL claims
+            // support for HW patch between telephony inputs and outputs, but fails
+            // to create one when called with the createAudioPatch() method. SW audio
+            // bridges are also broken on them due to improperly configured audio policy.
+            ALOGW("Failed to create RX path audio patch, falling back to pre-R behavior");
+            createRxPatch = false;
+            createTxPatch = false;
+        }
 
         // If the TX device is on the primary HW module but RX device is
         // on other HW module, SinkMetaData of telephony input should handle it
         // assuming the device uses audio HAL V5.0 and above
+    }
+    // Use legacy routing method for voice calls via setOutputDevice() on primary output.
+    if (!createRxPatch) {
+        muteWaitMs = setOutputDevices(mPrimaryOutput, rxDevices, true, delayMs);
     }
     if (createTxPatch) { // create TX path audio patch
         // terminate active capture if on the same HW module as the call TX source device
