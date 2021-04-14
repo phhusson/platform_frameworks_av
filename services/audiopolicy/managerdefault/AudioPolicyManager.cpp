@@ -3490,8 +3490,7 @@ status_t AudioPolicyManager::getAudioPort(struct audio_port *port)
 status_t AudioPolicyManager::createAudioPatchInternal(const struct audio_patch *patch,
                                                       audio_patch_handle_t *handle,
                                                       uid_t uid, uint32_t delayMs,
-                                                      const sp<SourceClientDescriptor>& sourceDesc,
-                                                      bool forceSwBridge)
+                                                      const sp<SourceClientDescriptor>& sourceDesc)
 {
     ALOGV("%s", __func__);
     if (handle == NULL || patch == NULL) {
@@ -3695,8 +3694,7 @@ status_t AudioPolicyManager::createAudioPatchInternal(const struct audio_patch *
                 // - audio HAL version is >= 3.0 but no route has been declared between devices
                 // - called from startAudioSource (aka sourceDesc != nullptr) and source device does
                 //   not have a gain controller
-                // - a previous attempt at using HW bridge failed (forceSwBridge)
-                if (forceSwBridge || !srcDevice->hasSameHwModuleAs(sinkDevice) ||
+                if (!srcDevice->hasSameHwModuleAs(sinkDevice) ||
                         (srcDevice->getModuleVersionMajor() < 3) ||
                         !srcDevice->getModule()->supportsPatch(srcDevice, sinkDevice) ||
                         (sourceDesc != nullptr &&
@@ -3761,12 +3759,7 @@ status_t AudioPolicyManager::createAudioPatchInternal(const struct audio_patch *
                         __func__, index, handle, patchBuilder.patch(), delayMs, uid, &patchDesc);
             if (status != NO_ERROR) {
                 ALOGW("%s patch panel could not connect device patch, error %d", __func__, status);
-                if (forceSwBridge || patch->sinks[0].type != AUDIO_PORT_TYPE_DEVICE) {
-                    return INVALID_OPERATION;
-                } else {
-                    ALOGW("Retrying with software bridging.");
-                    return createAudioPatchInternal(patch, handle, uid, delayMs, sourceDesc, true);
-                }
+                return INVALID_OPERATION;
             }
         } else {
             return BAD_VALUE;
