@@ -35,6 +35,7 @@ const char* sAudioHALVersions[] = {
     "6.0",
     "5.0",
     "4.0",
+    "2.0",
     nullptr
 };
 
