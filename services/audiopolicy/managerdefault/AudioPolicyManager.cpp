@@ -601,6 +601,11 @@ status_t AudioPolicyManager::updateCallRoutingInternal(
           rxDevices.itemAt(0)->toString().c_str(), txSourceDevice->toString().c_str());
 
     disconnectTelephonyRxAudioSource();
+    // release existing RX patch if any
+    if (mCallRxPatch != 0) {
+        releaseAudioPatchInternal(mCallRxPatch->getHandle());
+        mCallRxPatch.clear();
+    }
     // release TX patch if any
     if (mCallTxPatch != 0) {
         releaseAudioPatchInternal(mCallTxPatch->getHandle());
@@ -629,9 +634,20 @@ status_t AudioPolicyManager::updateCallRoutingInternal(
             ALOGE("%s() no telephony Tx and/or RX device", __func__);
             return INVALID_OPERATION;
         }
-        // createAudioPatchInternal now supports both HW / SW bridging
-        createRxPatch = true;
-        createTxPatch = true;
+        if (property_get_int32("ro.vndk.version", 31) >= 30) {
+            // createAudioPatchInternal now supports both HW / SW bridging
+            createRxPatch = true;
+            createTxPatch = true;
+        } else {
+            // pre-R behavior: some devices before VNDK 30 do not support createAudioPatch correctly
+            // for HW bridging even though they declare support for it
+            // do not create a patch (aka Sw Bridging) if Primary HW module has declared supporting a
+            // route between telephony RX to Sink device and Source device to telephony TX
+            ALOGI("%s() Using pre-R behavior for createRxPatch and createTxPatch", __func__);
+            const auto &primaryModule = telephonyRxModule;
+            createRxPatch = !primaryModule->supportsPatch(rxSourceDevice, rxDevices.itemAt(0));
+            createTxPatch = !primaryModule->supportsPatch(txSourceDevice, txSinkDevice);
+        }
     } else {
         // If the RX device is on the primary HW module, then use legacy routing method for
         // voice calls via setOutputDevice() on primary output.
@@ -648,7 +664,14 @@ status_t AudioPolicyManager::updateCallRoutingInternal(
     if (!createRxPatch) {
         muteWaitMs = setOutputDevices(mPrimaryOutput, rxDevices, true, delayMs);
     } else { // create RX path audio patch
-        connectTelephonyRxAudioSource();
+        if (property_get_int32("ro.vndk.version", 31) >= 31) {
+            connectTelephonyRxAudioSource();
+        } else {
+            // pre-S behavior: some devices do not support SW bridging correctly when HW bridge is
+            // available through createAudioPatch(); startAudioSource() forces SW bridging.
+            ALOGI("%s() Using pre-S behavior to create HW Rx patch", __func__);
+            mCallRxPatch = createTelephonyPatch(true /*isRx*/, rxDevices.itemAt(0), delayMs);
+        }
         // If the TX device is on the primary HW module but RX device is
         // on other HW module, SinkMetaData of telephony input should handle it
         // assuming the device uses audio HAL V5.0 and above
