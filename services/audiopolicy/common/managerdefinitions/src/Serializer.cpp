@@ -431,7 +431,7 @@ PolicySerializer::deserialize<AudioProfileTraits>(
     std::string samplingRates = getXmlAttribute(cur, Attributes::samplingRates);
     std::string format = getXmlAttribute(cur, Attributes::format);
     std::string channels = getXmlAttribute(cur, Attributes::channelMasks);
-    ChannelTraits::Collection channelsMask = channelMasksFromString(channels, ",");
+    ChannelTraits::Collection channelsMask = channelMasksFromString(channels, mChannelMasksSeparator.c_str());
 
     //Some Foxconn devices have wrong earpiece channel mask, leading to no channel mask
     if(channelsMask.size() == 1 && *channelsMask.begin() == AUDIO_CHANNEL_IN_MONO && isOutput) {
