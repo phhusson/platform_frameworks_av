@@ -656,7 +656,7 @@ std::variant<status_t, RouteTraits::Element> PolicySerializer::deserialize<Route
             if (source == NULL) {
                 source = ctx->findPortByTagName(trim(devTag));
 	    }
-            if (source == NULL) {
+            if (source == NULL && false) {
                 ALOGE("%s: no source found with name=%s", __func__, devTag);
                 return BAD_VALUE;
             } else if (source == NULL) {
