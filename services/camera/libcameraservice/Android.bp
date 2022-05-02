@@ -157,6 +157,7 @@ cc_library_shared {
         "vendor.samsung.hardware.camera.provider@3.0",
         "vendor.samsung.hardware.camera.provider@4.0",
         "vendor.samsung.hardware.camera.device@5.0",
+        "vendor.samsung.hardware.camera.device@4.0",
         "media_permission-aidl-cpp",
     ],
 
