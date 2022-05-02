@@ -24,6 +24,7 @@
 #include <vendor/samsung/hardware/camera/provider/3.0/ISehCameraProvider.h>
 #include <vendor/samsung/hardware/camera/provider/4.0/ISehCameraProvider.h>
 #include <vendor/samsung/hardware/camera/device/5.0/ISehCameraDevice.h>
+#include <vendor/samsung/hardware/camera/device/4.0/ISehCameraDevice.h>
 
 #include <algorithm>
 #include <chrono>
@@ -2284,9 +2285,14 @@ status_t CameraProviderManager::ProviderInfo::DeviceInfo::setTorchMode(Interface
     auto sehCast = vendor::samsung::hardware::camera::device::V5_0::ISehCameraDevice::castFrom(interface);
     android::sp<vendor::samsung::hardware::camera::device::V5_0::ISehCameraDevice> seh = sehCast;
 
+    auto sehCast2 = vendor::samsung::hardware::camera::device::V4_0::ISehCameraDevice::castFrom(interface);
+    android::sp<vendor::samsung::hardware::camera::device::V4_0::ISehCameraDevice> seh2 = sehCast2;
+
     Status s;
     if(seh != nullptr) {
         s = seh->sehSetTorchModeStrength(enabled ? TorchMode::ON : TorchMode::OFF, flashStrength);
+    } else if(seh2 != nullptr) {
+        s = seh2->sehSetTorchModeStrength(enabled ? TorchMode::ON : TorchMode::OFF, flashStrength);
     } else {
         s = interface->setTorchMode(enabled ? TorchMode::ON : TorchMode::OFF);
     }
