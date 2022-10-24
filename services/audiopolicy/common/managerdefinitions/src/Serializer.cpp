@@ -252,6 +252,7 @@ private:
     std::string mChannelMasksSeparator = ",";
     std::string mSamplingRatesSeparator = ",";
     std::string mFlagsSeparator = "|";
+    std::string mMixPortName = "";
 
     // Children: ModulesTraits, VolumeTraits, SurroundSoundTraits (optional)
 };
@@ -439,6 +440,13 @@ PolicySerializer::deserialize<AudioProfileTraits>(
         channelsMask = channelMasksFromString("AUDIO_CHANNEL_OUT_MONO", ",");
     }
 
+    // This breaks in-game voice chat and audio in some messaging apps causing it to play with a higher pitch and speed
+    bool disableStereoVoip = property_get_bool("persist.sys.phh.disable_stereo_voip", false);
+    if (disableStereoVoip && mMixPortName == "voip_rx") {
+        ALOGI("%s: disabling stereo support on voip_rx", __func__);
+        channelsMask = channelMasksFromString("AUDIO_CHANNEL_OUT_MONO", ",");
+    }
+
     if (mIgnoreVendorExtensions && maybeVendorExtension(format)) {
         ALOGI("%s: vendor extension format \"%s\" skipped", __func__, format.c_str());
         return NO_INIT;
@@ -461,6 +469,7 @@ std::variant<status_t, MixPortTraits::Element> PolicySerializer::deserialize<Mix
     using Attributes = MixPortTraits::Attributes;
 
     std::string name = getXmlAttribute(child, Attributes::name);
+    mMixPortName = name;
     if (name.empty()) {
         ALOGE("%s: No %s found", __func__, Attributes::name);
         return BAD_VALUE;
