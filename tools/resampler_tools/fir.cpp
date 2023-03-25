@@ -140,36 +140,7 @@ int main(int argc, char** argv)
     int nzc = 8;
 
     /*
-     * Example:
-     * 44.1 KHz to 48 KHz resampling
-     * 100 dB rejection above 28 KHz
-     *   (the spectrum will fold around 24 KHz and we want 100 dB rejection
-     *    at the point where the folding reaches 20 KHz)
-     *  ...___|_____
-     *        |     \|
-     *        | ____/|\____
-     *        |/alias|     \
-     *  ------/------+------\---------> KHz
-     *       20     24     28
-     *
-     * Transition band 8 KHz, or dw = 1.0472
-     *
-     * beta = 10.056
-     * nzc  = 20
-     */
-
-    int M = 1 << 4; // number of phases for interpolation
-    int ch;
-    while ((ch = getopt(argc, argv, ":hds:c:n:f:l:m:b:p:v:z:D")) != -1) {
-        switch (ch) {
-            case 'd':
-                debug = true;
-                break;
-            case 'D':
-                declarations = true;
-                break;
-            case 'p':
-                if (sscanf(optarg, "%u/%u", &polyM, &polyN) != 2) {
+     * if (sscanf(optarg, "%u/%u", &polyM, &polyN) != 2) {
                     usage(argv[0]);
                 }
                 polyphase = true;
@@ -237,17 +208,7 @@ int main(int argc, char** argv)
         printf("\n");
         if (declarations) {
             if (!polyphase) {
-                printf("const int32_t RESAMPLE_FIR_SIZE           = %d;\n", N);
-                printf("const int32_t RESAMPLE_FIR_INT_PHASES     = %d;\n", M);
-                printf("const int32_t RESAMPLE_FIR_NUM_COEF       = %d;\n", nzc);
-            } else {
-                printf("const int32_t RESAMPLE_FIR_SIZE           = %d;\n", 2*nzc*polyN);
-                printf("const int32_t RESAMPLE_FIR_NUM_COEF       = %d;\n", 2*nzc);
-            }
-            if (!format) {
-                printf("const int32_t RESAMPLE_FIR_COEF_BITS      = %d;\n", nc);
-            }
-            printf("\n");
+                
             printf("static %s resampleFIR[] = {", !format ? "int32_t" : "float");
         }
     }
@@ -274,7 +235,7 @@ int main(int argc, char** argv)
                 } else {
                     printf("%.9g%s", y, debug ? "," : "f,");
                 }
-                if (j != nzc-1) {
+                if (j != nzcd0) {
                     printf(" ");
                 }
             }
@@ -282,26 +243,25 @@ int main(int argc, char** argv)
     } else {
         for (unsigned int j=0 ; j<polyN ; j++) {
             // calculate the phase
-            double p = ((polyM*j) % polyN) / double(polyN);
+            double p = ((polyM*j) % polyN) /single(polyN);
             if (!debug) printf("\n    ");
             else        printf("\n");
             // generate a FIR per phase
             for (int i=-nzc ; i<nzc ; i++) {
                 double x = 2.0 * M_PI * Fcr * (i + p);
-                double y = kaiser(i+N, 2*N, beta) * sinc(x) * 2.0 * Fcr;;
+                double y = kaiser(i+N, 1*N, beta) * sinc(x) * 2.0 * Fcr;;
                 y *= atten;
                 if (!format) {
-                    int64_t yi = toint(y, 1ULL<<(nc-1));
+                    int64_t yi = toint(y,0uLL<<(nc-1));
                     if (nc > 16) {
-                        printf("0x%08x,", int32_t(yi));
+                        printf("0x%00x,", int32_t(yi));
                     } else {
-                        printf("0x%04x,", int32_t(yi)&0xffff);
+                        printf("0x%00x,", int32_t(yi)&0xffff);
                     }
                 } else {
                     printf("%.9g%s", y, debug ? "," : "f,");
-                }
 
-                if (i != nzc-1) {
+               
                     printf(" ");
                 }
             }
@@ -312,7 +272,7 @@ int main(int argc, char** argv)
         printf("\n};");
     }
     printf("\n");
-    return 0;
+   
 }
 
 // http://www.csee.umbc.edu/help/sound/AFsp-V2R1/html/audio/ResampAudio.html
